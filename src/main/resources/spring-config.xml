@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans 
+       http://www.springframework.org/schema/beans/spring-beans.xsd 
+       http://www.springframework.org/schema/mvc 
+       http://www.springframework.org/schema/mvc/spring-mvc.xsd 
+       http://www.springframework.org/schema/context 
+       http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd">
+
+    <!--启用注解-->
+    <mvc:annotation-driven/>
+
+    <!--扫描注解-->
+    <context:component-scan base-package="com.lym.ssm"/>
+
+    <!--配置静态资源-->
+    <mvc:default-servlet-handler/>
+
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+
+        <!--配置页面前缀-->
+        <property name="prefix" value="/"/>
+        <!--后缀-->
+        <property name="suffix" value=".html"/>
+
+    </bean>
+    
+    <!--加载db.properties-->
+    <context:property-placeholder location="classpath:db.properties"/>
+    
+    <bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+        <property name="driverClass" value="${jdbc.Driver}"/>
+        <property name="jdbcUrl" value="${jdbc.url}"/>
+        <property name="user" value="${jdbc.username}"/>
+        <property name="password" value="${jdbc.password}"/>    
+    </bean>
+    
+    <!--配置sessionFactory-->
+    <bean id="sessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSource"/>
+        <property name="configLocation" value="classpath:mybatis-config.xml"/>
+    </bean>
+    
+    <!--创建事务管理器-->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+    
+    <!--advise-->
+    <tx:advice id="mybatisAdvisor" transaction-manager="transactionManager">
+        <tx:attributes>
+            <tx:method name="add*" read-only="false"/>
+            <tx:method name="delete*" read-only="false"/>
+            <tx:method name="update*" read-only="false"/>
+            <tx:method name="find*" read-only="true"/>
+            <tx:method name="*" read-only="true"/>
+        </tx:attributes>
+    </tx:advice>
+
+    <!--设置切面-->
+    <aop:config>
+        <aop:pointcut id="mapperPointCut" expression="execution(* com.lym.ssm.mapper.*.*(..))"/>
+        <aop:advisor advice-ref="mybatisAdvisor" pointcut-ref="mapperPointCut"/>
+    </aop:config>
+
+    <!--扫描装载mybatis的Mapper对象-->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <!--配置扫描的包-->
+        <property name="basePackage" value="com.lym.ssm.mapper"/>
+
+        <!--配置sessionFactory-->
+        <property name="sqlSessionFactoryBeanName" value="sessionFactory"/>
+    </bean>
+
+    <!--&lt;!&ndash;配置验证文件&ndash;&gt;-->
+    <!--<bean class="org.springframework.context.support.ReloadableResourceBundleMessageSource" id="messageSource">-->
+        <!--<property name="basenames">-->
+            <!--<list>-->
+                <!--<value>classpath:CustomValidationMessages</value>-->
+            <!--</list>-->
+        <!--</property>-->
+        <!--<property name="defaultEncoding" value="utf-8"/>-->
+    <!--</bean>-->
+
+    <!--&lt;!&ndash;创建校验器&ndash;&gt;-->
+    <!--<bean id="validator" class="org.springframework.validation.beanvalidation.LocalValidatorFactoryBean">-->
+        <!--<property name="providerClass" value="org.hibernate.validator.HibernateValidator"/>-->
+        <!--<property name="validationMessageSource" ref="messageSource"/>-->
+    <!--</bean>-->
+
+
+    <!--&lt;!&ndash;添加拦截器&ndash;&gt;-->
+    <!--<mvc:interceptors>-->
+        <!--&lt;!&ndash;声明拦截器&ndash;&gt;-->
+        <!--<bean class = "com.lym.ssm.interceptor.LoginInterceptor" id="loginInterceptor"/>-->
+        <!--<mvc:interceptor>-->
+            <!--<mvc:mapping path="/**"/>-->
+            <!--<bean class = "com.lym.ssm.interceptor.LoginInterceptor"/>-->
+        <!--</mvc:interceptor>-->
+    <!--</mvc:interceptors>-->
+
+</beans>
